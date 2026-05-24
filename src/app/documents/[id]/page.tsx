@@ -5,6 +5,8 @@ import { db } from "@/lib/db";
 import { cards, chunks, documents } from "@/lib/db/schema";
 import type { CardItem, DocumentSummary } from "@/types";
 
+export const dynamic = "force-dynamic";
+
 export default async function DocumentPage({
   params,
 }: {

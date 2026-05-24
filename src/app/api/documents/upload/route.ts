@@ -6,6 +6,7 @@ import { documents } from "@/lib/db/schema";
 import { processDocument } from "@/lib/processing/process-document";
 import { accentColorFromTitle } from "@/lib/utils/accent-color";
 
+export const runtime = "nodejs";
 export const maxDuration = 300;
 
 export async function POST(request: Request) {

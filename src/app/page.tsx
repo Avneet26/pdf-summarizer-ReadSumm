@@ -4,6 +4,8 @@ import { db } from "@/lib/db";
 import { documents } from "@/lib/db/schema";
 import type { DocumentSummary } from "@/types";
 
+export const dynamic = "force-dynamic";
+
 function toSummary(doc: typeof documents.$inferSelect): DocumentSummary {
   return {
     id: doc.id,
