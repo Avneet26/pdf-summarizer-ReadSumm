@@ -1,5 +1,5 @@
 import { desc } from "drizzle-orm";
-import { LibraryPageClient } from "@/components/library/LibraryPageClient";
+import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { documents } from "@/lib/db/schema";
 import type { DocumentSummary } from "@/types";
@@ -20,11 +20,11 @@ function toSummary(doc: typeof documents.$inferSelect): DocumentSummary {
   };
 }
 
-export default async function HomePage() {
+export async function GET() {
   const rows = await db
     .select()
     .from(documents)
     .orderBy(desc(documents.createdAt));
 
-  return <LibraryPageClient initialDocuments={rows.map(toSummary)} />;
+  return NextResponse.json(rows.map(toSummary));
 }
