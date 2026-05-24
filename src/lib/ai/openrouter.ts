@@ -10,6 +10,7 @@ import {
   trimForAi,
   type BatchChunkInput,
 } from "@/lib/ai/prompts";
+import { getAppRefererUrl } from "@/lib/utils/app-url";
 import { countWords } from "@/lib/utils/word-count";
 
 export interface GeneratedCard {
@@ -89,8 +90,7 @@ async function callOpenRouter(
     headers: {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
-      "HTTP-Referer":
-        process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
+      "HTTP-Referer": getAppRefererUrl(),
       "X-Title": "PDF Easy Read",
     },
     body: JSON.stringify({

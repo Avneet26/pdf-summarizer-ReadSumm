@@ -36,8 +36,9 @@ TURSO_DATABASE_URL=file:local.db
 OPENROUTER_API_KEY=your-openrouter-key
 OPENROUTER_MODEL=anthropic/claude-3.5-sonnet
 OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
-NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
+
+`NEXT_PUBLIC_APP_URL` is optional. On Vercel, the app URL is detected automatically from `VERCEL_URL`.
 
 Swap `OPENROUTER_MODEL` to any model supported by OpenRouter (e.g. `openai/gpt-4o-mini`, `google/gemini-flash-1.5`).
 
