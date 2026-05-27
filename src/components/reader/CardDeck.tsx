@@ -1,29 +1,89 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { ProgressBar } from "@/components/reader/ProgressBar";
 import { SummaryCard } from "@/components/reader/SummaryCard";
 import type { CardItem } from "@/types";
 
+const PROGRESS_SAVE_MS = 500;
+
 interface CardDeckProps {
+  documentId: string;
   cards: CardItem[];
   accentColor: string;
+  initialIndex?: number;
 }
 
-export function CardDeck({ cards, accentColor }: CardDeckProps) {
-  const [index, setIndex] = useState(0);
+export function CardDeck({
+  documentId,
+  cards,
+  accentColor,
+  initialIndex = 0,
+}: CardDeckProps) {
+  const [index, setIndex] = useState(initialIndex);
   const [direction, setDirection] = useState(0);
+  const [showContinueHint, setShowContinueHint] = useState(initialIndex > 0);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    setIndex(initialIndex);
+    setShowContinueHint(initialIndex > 0);
+  }, [initialIndex, cards.length]);
+
+  const saveProgress = useCallback(
+    (cardIndex: number) => {
+      const card = cards[cardIndex];
+      if (!card) return;
+
+      void fetch(`/api/documents/${documentId}/progress`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          lastCardIndex: cardIndex,
+          lastCardId: card.id,
+        }),
+      });
+    },
+    [cards, documentId],
+  );
+
+  const scheduleSave = useCallback(
+    (cardIndex: number) => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = setTimeout(() => {
+        saveProgress(cardIndex);
+      }, PROGRESS_SAVE_MS);
+    },
+    [saveProgress],
+  );
+
+  useEffect(() => {
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
+  }, []);
 
   const goTo = useCallback(
     (next: number) => {
       if (next < 0 || next >= cards.length) return;
       setDirection(next > index ? 1 : -1);
       setIndex(next);
+      scheduleSave(next);
+      if (next !== initialIndex) {
+        setShowContinueHint(false);
+      }
     },
-    [cards.length, index],
+    [cards.length, index, initialIndex, scheduleSave],
   );
+
+  const startFromBeginning = useCallback(() => {
+    setShowContinueHint(false);
+    setDirection(-1);
+    setIndex(0);
+    scheduleSave(0);
+  }, [scheduleSave]);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -45,9 +105,46 @@ export function CardDeck({ cards, accentColor }: CardDeckProps) {
   }
 
   const current = cards[index];
+  const resumeCard = cards[initialIndex];
 
   return (
     <div className="space-y-6">
+      {showContinueHint && resumeCard ? (
+        <div
+          className="flex flex-col gap-3 rounded-[1.5rem] border px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
+          style={{
+            borderColor: `${accentColor}33`,
+            backgroundColor: `${accentColor}0d`,
+          }}
+        >
+          <div>
+            <p className="font-medium text-foreground">Continue where you left off</p>
+            <p className="mt-1 text-sm text-muted">
+              Card {initialIndex + 1} of {cards.length}: {resumeCard.subtitle}
+            </p>
+          </div>
+          <div className="flex shrink-0 gap-2">
+            <Button
+              variant="ghost"
+              className="rounded-full border border-black/10 text-sm"
+              onClick={startFromBeginning}
+            >
+              Start over
+            </Button>
+            <Button
+              className="rounded-full text-sm text-white"
+              style={{ backgroundColor: accentColor }}
+              onClick={() => {
+                setShowContinueHint(false);
+                if (index !== initialIndex) goTo(initialIndex);
+              }}
+            >
+              Continue
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
       <ProgressBar current={index} total={cards.length} accentColor={accentColor} />
 
       <div className="relative overflow-hidden">
