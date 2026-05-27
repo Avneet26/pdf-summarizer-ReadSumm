@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { isAcceptedPdfFile } from "@/lib/utils/pdf-file";
 import { cn } from "@/lib/utils/cn";
 
 interface UploadDropzoneProps {
@@ -15,7 +16,7 @@ export function UploadDropzone({ onUpload, uploading }: UploadDropzoneProps) {
 
   async function handleFile(file: File) {
     setError(null);
-    if (!file.name.toLowerCase().endsWith(".pdf")) {
+    if (!(await isAcceptedPdfFile(file))) {
       setError("Please upload a PDF file.");
       return;
     }
@@ -49,7 +50,7 @@ export function UploadDropzone({ onUpload, uploading }: UploadDropzoneProps) {
       <input
         ref={inputRef}
         type="file"
-        accept="application/pdf,.pdf"
+        accept="application/pdf,.pdf,application/octet-stream"
         className="hidden"
         onChange={async (event) => {
           const file = event.target.files?.[0];
