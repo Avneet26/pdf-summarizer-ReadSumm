@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "vercel-build": "node scripts/vercel-prebuild.mjs && next build",
     "start": "next start",
     "lint": "eslint",
     "db:generate": "drizzle-kit generate",

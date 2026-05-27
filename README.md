@@ -63,6 +63,19 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
+## Deploy on Vercel
+
+1. Create a [Turso](https://turso.tech/) database and add these environment variables in Vercel (Production and Preview):
+
+   - `TURSO_DATABASE_URL` — your `libsql://…` URL (do **not** use `file:local.db` on Vercel)
+   - `TURSO_AUTH_TOKEN` — Turso auth token for that database
+
+2. Add the rest of the variables from `.env.example` (`OPENROUTER_API_KEY`, Firebase credentials, etc.).
+
+3. Deploy. The Vercel build runs `drizzle-kit push` against Turso so tables exist before the app serves traffic. Runtime also applies SQL migrations from `drizzle/migrations/` on cold start.
+
+If the homepage fails to load, check Vercel **Runtime Logs** for database errors and confirm Turso env vars are set for the environment you are visiting.
+
 ## Firebase setup
 
 The PDF itself is never sent through the Vercel serverless function — the browser uploads it directly to Firebase Storage via a short-lived signed URL, and the server only downloads it to extract text, then deletes the staged object. This sidesteps the Vercel ~4.5 MB request-body limit that otherwise causes mobile uploads to 413.
