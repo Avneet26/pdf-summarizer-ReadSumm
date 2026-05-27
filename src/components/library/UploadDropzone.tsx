@@ -1,12 +1,20 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { MAX_UPLOAD_BYTES, formatMaxUploadLimit } from "@/lib/constants";
 import { isAcceptedPdfFile } from "@/lib/utils/pdf-file";
 import { cn } from "@/lib/utils/cn";
 
 interface UploadDropzoneProps {
   onUpload: (file: File) => Promise<void>;
   uploading: boolean;
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes >= 1024 * 1024) {
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+  return `${Math.max(1, Math.round(bytes / 1024))} KB`;
 }
 
 export function UploadDropzone({ onUpload, uploading }: UploadDropzoneProps) {
@@ -18,6 +26,14 @@ export function UploadDropzone({ onUpload, uploading }: UploadDropzoneProps) {
     setError(null);
     if (!(await isAcceptedPdfFile(file))) {
       setError("Please upload a PDF file.");
+      return;
+    }
+    // Pre-flight size check so mobile users get a clear error instead of a
+    // confusing 413 / network failure from the platform's edge.
+    if (file.size > MAX_UPLOAD_BYTES) {
+      setError(
+        `That PDF is ${formatFileSize(file.size)}, but the upload limit is ${formatMaxUploadLimit()}. Try a smaller file.`,
+      );
       return;
     }
     try {
@@ -65,6 +81,9 @@ export function UploadDropzone({ onUpload, uploading }: UploadDropzoneProps) {
       <p className="mt-2 text-sm text-muted">
         Books, papers, reports — we&apos;ll create easy-read cards chapter by chapter
         or page by page.
+      </p>
+      <p className="mt-1 text-xs text-muted">
+        PDFs up to {formatMaxUploadLimit()}.
       </p>
 
       <button

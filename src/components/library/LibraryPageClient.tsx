@@ -39,12 +39,33 @@ export function LibraryPageClient({ initialDocuments }: LibraryPageClientProps) 
     const formData = new FormData();
     formData.append("file", file);
 
-    const response = await fetch("/api/documents/upload", {
-      method: "POST",
-      body: formData,
-    });
+    let response: Response;
+    try {
+      response = await fetch("/api/documents/upload", {
+        method: "POST",
+        body: formData,
+      });
+    } catch (err) {
+      // Mobile networks frequently drop mid-upload. fetch rejects with a
+      // generic TypeError ("Failed to fetch"); turn that into something
+      // actionable for the user.
+      setUploading(false);
+      const message =
+        err instanceof Error && /abort/i.test(err.message)
+          ? "Upload was cancelled."
+          : "Upload failed — your connection may have dropped. Please try again.";
+      throw new Error(message);
+    }
 
-    const payload = await parseJsonResponse<{ error?: string }>(response);
+    let payload: { error?: string } = {};
+    try {
+      payload = await parseJsonResponse<{ error?: string }>(response);
+    } catch (err) {
+      setUploading(false);
+      if (!response.ok) throw err;
+      throw err;
+    }
+
     if (!response.ok) {
       setUploading(false);
       throw new Error(payload.error ?? `Upload failed (${response.status}).`);

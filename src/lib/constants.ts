@@ -1,6 +1,28 @@
 export const SINGLE_USER_ID = "default";
 
-export const MAX_UPLOAD_BYTES = 50 * 1024 * 1024; // 50MB
+// Vercel serverless functions cap the request body at ~4.5 MB. We stay
+// comfortably below that to leave headroom for multipart envelope + headers.
+// Override via NEXT_PUBLIC_MAX_UPLOAD_MB when self-hosting behind a proxy that
+// allows larger payloads. The same value is referenced on the client and the
+// server so the size check stays consistent.
+const DEFAULT_MAX_UPLOAD_MB = 4;
+
+function parseMaxUploadMb(): number {
+  const raw = process.env.NEXT_PUBLIC_MAX_UPLOAD_MB;
+  if (!raw) return DEFAULT_MAX_UPLOAD_MB;
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed) || parsed <= 0) return DEFAULT_MAX_UPLOAD_MB;
+  return parsed;
+}
+
+export const MAX_UPLOAD_MB = parseMaxUploadMb();
+export const MAX_UPLOAD_BYTES = Math.floor(MAX_UPLOAD_MB * 1024 * 1024);
+
+export function formatMaxUploadLimit(): string {
+  return Number.isInteger(MAX_UPLOAD_MB)
+    ? `${MAX_UPLOAD_MB} MB`
+    : `${MAX_UPLOAD_MB.toFixed(1)} MB`;
+}
 
 export const PAGE_CHUNK_SIZE = 5;
 
