@@ -5,6 +5,10 @@ import { db } from "@/lib/db";
 import { documents } from "@/lib/db/schema";
 import { processDocument } from "@/lib/processing/process-document";
 import { accentColorFromTitle } from "@/lib/utils/accent-color";
+import {
+  bufferHasPdfHeader,
+  isLikelyPdfByMetadata,
+} from "@/lib/utils/pdf-file";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -18,13 +22,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "No PDF file provided." }, { status: 400 });
     }
 
-    if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
-      return NextResponse.json(
-        { error: "Only PDF files are supported." },
-        { status: 400 },
-      );
-    }
-
     if (file.size > MAX_UPLOAD_BYTES) {
       return NextResponse.json(
         { error: "File exceeds the 50MB upload limit." },
@@ -33,6 +30,13 @@ export async function POST(request: Request) {
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
+
+    if (!isLikelyPdfByMetadata(file.name, file.type) && !bufferHasPdfHeader(buffer)) {
+      return NextResponse.json(
+        { error: "Only PDF files are supported." },
+        { status: 400 },
+      );
+    }
     const titleGuess = file.name.replace(/\.pdf$/i, "").replace(/[_-]/g, " ").trim();
     const documentId = nanoid();
     const createdAt = new Date().toISOString();
