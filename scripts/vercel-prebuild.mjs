@@ -7,9 +7,14 @@ if (!onVercel) {
   process.exit(0);
 }
 
-if (!url || url.startsWith("file:")) {
+const isRemote =
+  url.startsWith("libsql:") ||
+  url.startsWith("https://") ||
+  url.startsWith("http://");
+
+if (!url || url.startsWith("file:") || !isRemote) {
   console.error(
-    "\n[Vercel build] TURSO_DATABASE_URL must be set to a Turso libsql:// URL.\n" +
+    "\n[Vercel build] TURSO_DATABASE_URL must be set to a Turso libsql:// or https:// URL.\n" +
       "  file:local.db only works for local development.\n" +
       "  Add TURSO_DATABASE_URL and TURSO_AUTH_TOKEN in Vercel → Project → Settings → Environment Variables.\n",
   );

@@ -1,6 +1,7 @@
 import { desc } from "drizzle-orm";
 import { LibraryPageClient } from "@/components/library/LibraryPageClient";
-import { db } from "@/lib/db";
+import { SetupRequired } from "@/components/setup/SetupRequired";
+import { db, prepareDatabase } from "@/lib/db/prepare";
 import { documents } from "@/lib/db/schema";
 import type { DocumentSummary } from "@/types";
 
@@ -23,10 +24,16 @@ function toSummary(doc: typeof documents.$inferSelect): DocumentSummary {
 }
 
 export default async function HomePage() {
-  const rows = await db
-    .select()
-    .from(documents)
-    .orderBy(desc(documents.createdAt));
+  try {
+    await prepareDatabase();
+    const rows = await db
+      .select()
+      .from(documents)
+      .orderBy(desc(documents.createdAt));
 
-  return <LibraryPageClient initialDocuments={rows.map(toSummary)} />;
+    return <LibraryPageClient initialDocuments={rows.map(toSummary)} />;
+  } catch (error) {
+    console.error("[HomePage] database error:", error);
+    return <SetupRequired error={error} />;
+  }
 }
