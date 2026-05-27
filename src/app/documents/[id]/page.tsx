@@ -1,7 +1,8 @@
 import { asc, eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { ReaderPageClient } from "@/components/reader/ReaderPageClient";
-import { db } from "@/lib/db";
+import { SetupRequired } from "@/components/setup/SetupRequired";
+import { db, prepareDatabase } from "@/lib/db/prepare";
 import {
   getReadingProgress,
   resolveCardIndex,
@@ -17,6 +18,13 @@ export default async function DocumentPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+
+  try {
+    await prepareDatabase();
+  } catch (error) {
+    console.error("[DocumentPage] database error:", error);
+    return <SetupRequired error={error} />;
+  }
 
   const [doc] = await db
     .select()

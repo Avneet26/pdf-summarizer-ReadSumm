@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { ensureDatabaseForApi } from "@/lib/db/api-prepare";
 import {
   getReadingProgress,
   saveReadingProgress,
@@ -8,6 +9,9 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const dbError = await ensureDatabaseForApi();
+  if (dbError) return dbError;
+
   const { id } = await params;
   const progress = await getReadingProgress(id);
 
@@ -20,6 +24,9 @@ export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const dbError = await ensureDatabaseForApi();
+  if (dbError) return dbError;
+
   const { id } = await params;
   const body = (await request.json()) as {
     lastCardIndex?: number;

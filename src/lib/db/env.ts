@@ -9,6 +9,14 @@ export function resolveDatabaseUrl(): string {
   return process.env.TURSO_DATABASE_URL ?? "file:local.db";
 }
 
+function isRemoteDatabaseUrl(url: string): boolean {
+  return (
+    url.startsWith("libsql:") ||
+    url.startsWith("https://") ||
+    url.startsWith("http://")
+  );
+}
+
 /** Validates production database settings before connecting or migrating. */
 export function assertDatabaseConfigured(): void {
   const url = resolveDatabaseUrl();
@@ -22,9 +30,9 @@ export function assertDatabaseConfigured(): void {
     );
   }
 
-  if (!url.startsWith("libsql:")) {
+  if (!isRemoteDatabaseUrl(url)) {
     throw new DatabaseConfigError(
-      `TURSO_DATABASE_URL must be a libsql:// URL on Vercel (got "${url.slice(0, 32)}…").`,
+      `TURSO_DATABASE_URL must be a remote Turso URL on Vercel (libsql://… or https://…). Got: ${url.slice(0, 48)}`,
     );
   }
 

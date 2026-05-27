@@ -1,6 +1,7 @@
 import { and, desc, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { SINGLE_USER_ID } from "@/lib/constants";
+import { ensureDatabaseForApi } from "@/lib/db/api-prepare";
 import { db } from "@/lib/db";
 import { documents, readingProgress } from "@/lib/db/schema";
 import type { DocumentSummary } from "@/types";
@@ -26,6 +27,9 @@ function toSummary(
 }
 
 export async function GET() {
+  const dbError = await ensureDatabaseForApi();
+  if (dbError) return dbError;
+
   const rows = await db
     .select({
       document: documents,

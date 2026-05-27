@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { MAX_UPLOAD_BYTES, formatMaxUploadLimit } from "@/lib/constants";
+import { ensureDatabaseForApi } from "@/lib/db/api-prepare";
 import { db } from "@/lib/db";
 import { documents } from "@/lib/db/schema";
 import { isFirebaseConfigured } from "@/lib/firebase/admin";

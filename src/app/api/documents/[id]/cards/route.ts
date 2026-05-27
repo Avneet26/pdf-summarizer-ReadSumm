@@ -1,5 +1,6 @@
 import { asc, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
+import { ensureDatabaseForApi } from "@/lib/db/api-prepare";
 import { db } from "@/lib/db";
 import { cards, chunks } from "@/lib/db/schema";
 import type { CardItem } from "@/types";
@@ -8,6 +9,9 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const dbError = await ensureDatabaseForApi();
+  if (dbError) return dbError;
+
   const { id } = await params;
 
   const rows = await db
