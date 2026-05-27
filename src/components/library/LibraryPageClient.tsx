@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { DocGrid } from "@/components/library/DocGrid";
 import { UploadDropzone } from "@/components/library/UploadDropzone";
 import { parseJsonResponse } from "@/lib/utils/parse-json-response";
+import { uploadViaFirebase } from "@/lib/utils/upload-via-firebase";
 import type { DocumentSummary } from "@/types";
 
 interface LibraryPageClientProps {
@@ -13,6 +14,7 @@ interface LibraryPageClientProps {
 export function LibraryPageClient({ initialDocuments }: LibraryPageClientProps) {
   const [documents, setDocuments] = useState(initialDocuments);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   const fetchDocuments = useCallback(async () => {
     const response = await fetch("/api/documents");
@@ -36,43 +38,16 @@ export function LibraryPageClient({ initialDocuments }: LibraryPageClientProps) 
 
   async function handleUpload(file: File) {
     setUploading(true);
-    const formData = new FormData();
-    formData.append("file", file);
-
-    let response: Response;
+    setUploadProgress(0);
     try {
-      response = await fetch("/api/documents/upload", {
-        method: "POST",
-        body: formData,
+      await uploadViaFirebase(file, {
+        onProgress: ({ ratio }) => setUploadProgress(ratio),
       });
-    } catch (err) {
-      // Mobile networks frequently drop mid-upload. fetch rejects with a
-      // generic TypeError ("Failed to fetch"); turn that into something
-      // actionable for the user.
+      await fetchDocuments();
+    } finally {
       setUploading(false);
-      const message =
-        err instanceof Error && /abort/i.test(err.message)
-          ? "Upload was cancelled."
-          : "Upload failed — your connection may have dropped. Please try again.";
-      throw new Error(message);
+      setUploadProgress(0);
     }
-
-    let payload: { error?: string } = {};
-    try {
-      payload = await parseJsonResponse<{ error?: string }>(response);
-    } catch (err) {
-      setUploading(false);
-      if (!response.ok) throw err;
-      throw err;
-    }
-
-    if (!response.ok) {
-      setUploading(false);
-      throw new Error(payload.error ?? `Upload failed (${response.status}).`);
-    }
-
-    await fetchDocuments();
-    setUploading(false);
   }
 
   async function handleDelete(id: string) {
@@ -98,7 +73,11 @@ export function LibraryPageClient({ initialDocuments }: LibraryPageClientProps) 
         </div>
       </header>
 
-      <UploadDropzone onUpload={handleUpload} uploading={uploading} />
+      <UploadDropzone
+        onUpload={handleUpload}
+        uploading={uploading}
+        progress={uploadProgress}
+      />
       <DocGrid documents={documents} loading={false} onDelete={handleDelete} />
     </div>
   );

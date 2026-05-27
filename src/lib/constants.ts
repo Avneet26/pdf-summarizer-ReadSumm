@@ -1,11 +1,10 @@
 export const SINGLE_USER_ID = "default";
 
-// Vercel serverless functions cap the request body at ~4.5 MB. We stay
-// comfortably below that to leave headroom for multipart envelope + headers.
-// Override via NEXT_PUBLIC_MAX_UPLOAD_MB when self-hosting behind a proxy that
-// allows larger payloads. The same value is referenced on the client and the
-// server so the size check stays consistent.
-const DEFAULT_MAX_UPLOAD_MB = 4;
+// Uploads go directly from the browser to Firebase Storage via a signed URL,
+// so the Vercel ~4.5 MB serverless body limit no longer applies. We still cap
+// the size to keep memory bounded when the server downloads the staged file
+// for processing. Override via NEXT_PUBLIC_MAX_UPLOAD_MB to taste.
+const DEFAULT_MAX_UPLOAD_MB = 50;
 
 function parseMaxUploadMb(): number {
   const raw = process.env.NEXT_PUBLIC_MAX_UPLOAD_MB;

@@ -8,6 +8,8 @@ import { cn } from "@/lib/utils/cn";
 interface UploadDropzoneProps {
   onUpload: (file: File) => Promise<void>;
   uploading: boolean;
+  /** Upload progress in [0, 1]. Optional. */
+  progress?: number;
 }
 
 function formatFileSize(bytes: number): string {
@@ -17,7 +19,11 @@ function formatFileSize(bytes: number): string {
   return `${Math.max(1, Math.round(bytes / 1024))} KB`;
 }
 
-export function UploadDropzone({ onUpload, uploading }: UploadDropzoneProps) {
+export function UploadDropzone({
+  onUpload,
+  uploading,
+  progress,
+}: UploadDropzoneProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -92,8 +98,27 @@ export function UploadDropzone({ onUpload, uploading }: UploadDropzoneProps) {
         onClick={() => inputRef.current?.click()}
         className="mt-6 inline-flex rounded-full bg-foreground px-6 py-3 text-sm font-medium text-background transition hover:opacity-90 disabled:opacity-50"
       >
-        {uploading ? "Processing upload…" : "Choose PDF"}
+        {uploading
+          ? progress !== undefined && progress > 0 && progress < 1
+            ? `Uploading ${Math.round(progress * 100)}%`
+            : "Processing upload…"
+          : "Choose PDF"}
       </button>
+
+      {uploading && progress !== undefined ? (
+        <div
+          className="mx-auto mt-4 h-1.5 w-full max-w-xs overflow-hidden rounded-full bg-black/10"
+          role="progressbar"
+          aria-valuenow={Math.round(progress * 100)}
+          aria-valuemin={0}
+          aria-valuemax={100}
+        >
+          <div
+            className="h-full bg-foreground transition-[width] duration-150"
+            style={{ width: `${Math.round(progress * 100)}%` }}
+          />
+        </div>
+      ) : null}
 
       {error ? (
         <p className="mt-4 text-sm text-red-600">{error}</p>
