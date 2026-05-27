@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { DocGrid } from "@/components/library/DocGrid";
 import { UploadDropzone } from "@/components/library/UploadDropzone";
+import { parseJsonResponse } from "@/lib/utils/parse-json-response";
 import type { DocumentSummary } from "@/types";
 
 interface LibraryPageClientProps {
@@ -16,7 +17,7 @@ export function LibraryPageClient({ initialDocuments }: LibraryPageClientProps) 
   const fetchDocuments = useCallback(async () => {
     const response = await fetch("/api/documents");
     if (!response.ok) return;
-    const data = (await response.json()) as DocumentSummary[];
+    const data = await parseJsonResponse<DocumentSummary[]>(response);
     setDocuments(data);
   }, []);
 
@@ -43,10 +44,10 @@ export function LibraryPageClient({ initialDocuments }: LibraryPageClientProps) 
       body: formData,
     });
 
-    const payload = await response.json();
+    const payload = await parseJsonResponse<{ error?: string }>(response);
     if (!response.ok) {
       setUploading(false);
-      throw new Error(payload.error ?? "Upload failed.");
+      throw new Error(payload.error ?? `Upload failed (${response.status}).`);
     }
 
     await fetchDocuments();
