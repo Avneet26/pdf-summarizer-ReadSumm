@@ -28,8 +28,13 @@ export function bufferHasPdfHeader(data: ArrayLike<number>): boolean {
 }
 
 export async function fileHasPdfHeader(file: File): Promise<boolean> {
-  const buffer = await file.slice(0, 4).arrayBuffer();
-  return bufferHasPdfHeader(new Uint8Array(buffer));
+  try {
+    const buffer = await file.slice(0, 4).arrayBuffer();
+    return bufferHasPdfHeader(new Uint8Array(buffer));
+  } catch {
+    // iOS Files / iCloud can defer file reads until access time.
+    return false;
+  }
 }
 
 /** Accept PDFs by extension/MIME or by magic bytes (common for iOS Files). */
