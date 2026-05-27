@@ -1,10 +1,14 @@
-import { desc } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
+import { SINGLE_USER_ID } from "@/lib/constants";
 import { db } from "@/lib/db";
-import { documents } from "@/lib/db/schema";
+import { documents, readingProgress } from "@/lib/db/schema";
 import type { DocumentSummary } from "@/types";
 
-function toSummary(doc: typeof documents.$inferSelect): DocumentSummary {
+function toSummary(
+  doc: typeof documents.$inferSelect,
+  lastCardIndex: number | null,
+): DocumentSummary {
   return {
     id: doc.id,
     title: doc.title,
@@ -17,14 +21,27 @@ function toSummary(doc: typeof documents.$inferSelect): DocumentSummary {
     chunkStrategy: doc.chunkStrategy,
     accentColor: doc.accentColor,
     createdAt: doc.createdAt,
+    lastCardIndex,
   };
 }
 
 export async function GET() {
   const rows = await db
-    .select()
+    .select({
+      document: documents,
+      lastCardIndex: readingProgress.lastCardIndex,
+    })
     .from(documents)
+    .leftJoin(
+      readingProgress,
+      and(
+        eq(readingProgress.documentId, documents.id),
+        eq(readingProgress.userId, SINGLE_USER_ID),
+      ),
+    )
     .orderBy(desc(documents.createdAt));
 
-  return NextResponse.json(rows.map(toSummary));
+  return NextResponse.json(
+    rows.map((row) => toSummary(row.document, row.lastCardIndex ?? null)),
+  );
 }

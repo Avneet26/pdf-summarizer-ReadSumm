@@ -16,6 +16,10 @@ export function DocTile({ document, index, onDelete }: DocTileProps) {
   const isProcessing = ["queued", "extracting", "chunking", "summarizing"].includes(
     document.status,
   );
+  const hasReadingProgress =
+    document.status === "ready" &&
+    (document.lastCardIndex ?? 0) > 0 &&
+    document.totalCards > 0;
 
   return (
     <motion.article
@@ -54,6 +58,13 @@ export function DocTile({ document, index, onDelete }: DocTileProps) {
         </div>
       </dl>
 
+      {hasReadingProgress ? (
+        <p className="mb-4 text-sm text-muted">
+          Left off at card {Math.min((document.lastCardIndex ?? 0) + 1, document.totalCards)}{" "}
+          of {document.totalCards}
+        </p>
+      ) : null}
+
       {document.status === "failed" && document.errorMessage ? (
         <p className="mb-4 rounded-2xl bg-red-50 px-3 py-2 text-sm text-red-700">
           {document.errorMessage}
@@ -67,7 +78,7 @@ export function DocTile({ document, index, onDelete }: DocTileProps) {
             className="inline-flex flex-1 items-center justify-center rounded-full px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
             style={{ backgroundColor: document.accentColor }}
           >
-            Read cards
+            {hasReadingProgress ? "Continue reading" : "Read cards"}
           </Link>
         ) : (
           <span className="inline-flex flex-1 items-center justify-center rounded-full bg-black/5 px-4 py-2 text-sm text-muted">

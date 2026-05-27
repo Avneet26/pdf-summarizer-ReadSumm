@@ -1,4 +1,4 @@
-import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { integer, primaryKey, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 export const documents = sqliteTable("documents", {
   id: text("id").primaryKey(),
@@ -51,6 +51,22 @@ export const cards = sqliteTable("cards", {
   body: text("body").notNull(),
   wordCount: integer("word_count").notNull().default(0),
 });
+
+export const readingProgress = sqliteTable(
+  "reading_progress",
+  {
+    userId: text("user_id").notNull(),
+    documentId: text("document_id")
+      .notNull()
+      .references(() => documents.id, { onDelete: "cascade" }),
+    lastCardIndex: integer("last_card_index").notNull().default(0),
+    lastCardId: text("last_card_id"),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.userId, table.documentId] }),
+  }),
+);
 
 export type Document = typeof documents.$inferSelect;
 export type NewDocument = typeof documents.$inferInsert;

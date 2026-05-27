@@ -10,12 +10,14 @@ interface ReaderPageClientProps {
   documentId: string;
   initialDocument: DocumentSummary;
   initialCards: CardItem[];
+  initialCardIndex?: number;
 }
 
 export function ReaderPageClient({
   documentId,
   initialDocument,
   initialCards,
+  initialCardIndex = 0,
 }: ReaderPageClientProps) {
   const [document, setDocument] = useState(initialDocument);
   const [cards, setCards] = useState(initialCards);
@@ -95,13 +97,23 @@ export function ReaderPageClient({
             />
           </div>
           {cards.length > 0 ? (
-            <CardDeck cards={cards} accentColor={document.accentColor} />
+            <CardDeck
+              documentId={documentId}
+              cards={cards}
+              accentColor={document.accentColor}
+              initialIndex={initialCardIndex}
+            />
           ) : (
             <div className="h-[420px] animate-pulse rounded-[2rem] bg-black/5" />
           )}
         </div>
       ) : (
-        <CardDeck cards={cards} accentColor={document.accentColor} />
+        <CardDeck
+          documentId={documentId}
+          cards={cards}
+          accentColor={document.accentColor}
+          initialIndex={initialCardIndex}
+        />
       )}
     </div>
   );

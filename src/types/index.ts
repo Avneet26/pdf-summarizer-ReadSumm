@@ -6,6 +6,12 @@ export type DocumentStatus =
   | "ready"
   | "failed";
 
+export interface ReadingProgress {
+  lastCardIndex: number;
+  lastCardId: string | null;
+  updatedAt: string;
+}
+
 export interface DocumentSummary {
   id: string;
   title: string;
@@ -18,6 +24,7 @@ export interface DocumentSummary {
   chunkStrategy: string | null;
   accentColor: string;
   createdAt: string;
+  lastCardIndex?: number | null;
 }
 
 export interface CardItem {

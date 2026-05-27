@@ -2,6 +2,10 @@ import { asc, eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { ReaderPageClient } from "@/components/reader/ReaderPageClient";
 import { db } from "@/lib/db";
+import {
+  getReadingProgress,
+  resolveCardIndex,
+} from "@/lib/db/reading-progress";
 import { cards, chunks, documents } from "@/lib/db/schema";
 import type { CardItem, DocumentSummary } from "@/types";
 
@@ -59,11 +63,15 @@ export default async function DocumentPage({
     sourcePages: row.sourcePages,
   }));
 
+  const progress = await getReadingProgress(id);
+  const initialCardIndex = resolveCardIndex(initialCards, progress);
+
   return (
     <ReaderPageClient
       documentId={id}
       initialDocument={initialDocument}
       initialCards={initialCards}
+      initialCardIndex={initialCardIndex}
     />
   );
 }
