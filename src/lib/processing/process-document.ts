@@ -143,10 +143,20 @@ async function processChunkBatch(
   }
 }
 
+interface ProcessOptions {
+  /**
+   * Invoked once processing finishes (whether it succeeded or failed) so the
+   * caller can clean up any staged uploads / temp storage. Failures inside
+   * the callback are swallowed so they cannot mask the real result.
+   */
+  onFinished?: () => Promise<void> | void;
+}
+
 export async function processDocument(
   documentId: string,
   pdfBuffer: Buffer,
   originalFilename: string,
+  options: ProcessOptions = {},
 ) {
   const pipelineStart = Date.now();
   console.log(`[PDF] Processing started: ${originalFilename} (${documentId})`);
@@ -242,5 +252,17 @@ export async function processDocument(
       status: "failed",
       errorMessage: message,
     });
+  } finally {
+    if (options.onFinished) {
+      try {
+        await options.onFinished();
+      } catch (cleanupError) {
+        const message =
+          cleanupError instanceof Error
+            ? cleanupError.message
+            : String(cleanupError);
+        console.warn(`[PDF] Cleanup hook failed for ${documentId}: ${message}`);
+      }
+    }
   }
 }

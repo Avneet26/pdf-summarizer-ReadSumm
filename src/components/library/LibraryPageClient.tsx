@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { DocGrid } from "@/components/library/DocGrid";
 import { UploadDropzone } from "@/components/library/UploadDropzone";
 import { parseJsonResponse } from "@/lib/utils/parse-json-response";
+import { uploadViaFirebase } from "@/lib/utils/upload-via-firebase";
 import type { DocumentSummary } from "@/types";
 
 interface LibraryPageClientProps {
@@ -13,6 +14,7 @@ interface LibraryPageClientProps {
 export function LibraryPageClient({ initialDocuments }: LibraryPageClientProps) {
   const [documents, setDocuments] = useState(initialDocuments);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   const fetchDocuments = useCallback(async () => {
     const response = await fetch("/api/documents");
@@ -36,22 +38,16 @@ export function LibraryPageClient({ initialDocuments }: LibraryPageClientProps) 
 
   async function handleUpload(file: File) {
     setUploading(true);
-    const formData = new FormData();
-    formData.append("file", file);
-
-    const response = await fetch("/api/documents/upload", {
-      method: "POST",
-      body: formData,
-    });
-
-    const payload = await parseJsonResponse<{ error?: string }>(response);
-    if (!response.ok) {
+    setUploadProgress(0);
+    try {
+      await uploadViaFirebase(file, {
+        onProgress: ({ ratio }) => setUploadProgress(ratio),
+      });
+      await fetchDocuments();
+    } finally {
       setUploading(false);
-      throw new Error(payload.error ?? `Upload failed (${response.status}).`);
+      setUploadProgress(0);
     }
-
-    await fetchDocuments();
-    setUploading(false);
   }
 
   async function handleDelete(id: string) {
@@ -77,7 +73,11 @@ export function LibraryPageClient({ initialDocuments }: LibraryPageClientProps) 
         </div>
       </header>
 
-      <UploadDropzone onUpload={handleUpload} uploading={uploading} />
+      <UploadDropzone
+        onUpload={handleUpload}
+        uploading={uploading}
+        progress={uploadProgress}
+      />
       <DocGrid documents={documents} loading={false} onDelete={handleDelete} />
     </div>
   );

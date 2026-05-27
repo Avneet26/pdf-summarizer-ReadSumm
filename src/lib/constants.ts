@@ -1,6 +1,27 @@
 export const SINGLE_USER_ID = "default";
 
-export const MAX_UPLOAD_BYTES = 50 * 1024 * 1024; // 50MB
+// Uploads go directly from the browser to Firebase Storage via a signed URL,
+// so the Vercel ~4.5 MB serverless body limit no longer applies. We still cap
+// the size to keep memory bounded when the server downloads the staged file
+// for processing. Override via NEXT_PUBLIC_MAX_UPLOAD_MB to taste.
+const DEFAULT_MAX_UPLOAD_MB = 50;
+
+function parseMaxUploadMb(): number {
+  const raw = process.env.NEXT_PUBLIC_MAX_UPLOAD_MB;
+  if (!raw) return DEFAULT_MAX_UPLOAD_MB;
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed) || parsed <= 0) return DEFAULT_MAX_UPLOAD_MB;
+  return parsed;
+}
+
+export const MAX_UPLOAD_MB = parseMaxUploadMb();
+export const MAX_UPLOAD_BYTES = Math.floor(MAX_UPLOAD_MB * 1024 * 1024);
+
+export function formatMaxUploadLimit(): string {
+  return Number.isInteger(MAX_UPLOAD_MB)
+    ? `${MAX_UPLOAD_MB} MB`
+    : `${MAX_UPLOAD_MB.toFixed(1)} MB`;
+}
 
 export const PAGE_CHUNK_SIZE = 5;
 

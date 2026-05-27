@@ -25,6 +25,10 @@ export const documents = sqliteTable("documents", {
   }),
   accentColor: text("accent_color").notNull().default("#6366f1"),
   createdAt: text("created_at").notNull(),
+  // Temporary storage object that holds the raw PDF until processing is done.
+  // Null once the object has been deleted (which happens right after we
+  // finish reading it on the server).
+  uploadObjectPath: text("upload_object_path"),
 });
 
 export const chunks = sqliteTable("chunks", {
