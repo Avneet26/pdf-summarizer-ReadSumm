@@ -50,7 +50,7 @@ export function UploadDropzone({ onUpload, uploading }: UploadDropzoneProps) {
       <input
         ref={inputRef}
         type="file"
-        accept="application/pdf,.pdf,application/octet-stream"
+        accept="application/pdf"
         className="hidden"
         onChange={async (event) => {
           const file = event.target.files?.[0];
