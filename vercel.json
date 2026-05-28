@@ -4,17 +4,17 @@
   "buildCommand": "npm run vercel-build",
   "installCommand": "npm install",
   "functions": {
-    "src/app/api/documents/upload/prepare/route.ts": {
+    "app/api/documents/upload/prepare/route.ts": {
       "maxDuration": 60
     },
-    "src/app/api/documents/upload/blob/route.ts": {
+    "app/api/documents/upload/blob/route.ts": {
       "maxDuration": 60
     },
-    "src/app/api/documents/upload/complete/route.ts": {
-      "maxDuration": 300
+    "app/api/documents/upload/complete/route.ts": {
+      "maxDuration": 60
     },
-    "src/app/api/documents/upload/direct/route.ts": {
-      "maxDuration": 300
+    "app/api/documents/upload/direct/route.ts": {
+      "maxDuration": 60
     }
   }
 }

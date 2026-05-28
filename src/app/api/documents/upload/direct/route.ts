@@ -1,11 +1,10 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 
 import { MAX_UPLOAD_BYTES, formatMaxUploadLimit } from "@/lib/constants";
 import { ensureDatabaseForApi } from "@/lib/db/api-prepare";
 import { db } from "@/lib/db";
 import { documents } from "@/lib/db/schema";
 import { nanoid } from "nanoid";
-import { processDocument } from "@/lib/processing/process-document";
 import { accentColorFromTitle } from "@/lib/utils/accent-color";
 import {
   bufferHasPdfHeader,
@@ -14,7 +13,8 @@ import {
 } from "@/lib/utils/pdf-file";
 
 export const runtime = "nodejs";
-export const maxDuration = 300;
+/** Hobby (non–fluid compute) allows at most 60s; keep within that limit. */
+export const maxDuration = 60;
 
 export async function POST(request: Request) {
   const dbError = await ensureDatabaseForApi();
@@ -78,7 +78,10 @@ export async function POST(request: Request) {
     `[PDF] Direct upload received: "${filename}" (${(buffer.byteLength / 1024).toFixed(1)} KB) → ${documentId}`,
   );
 
-  void processDocument(documentId, buffer, filename);
+  after(async () => {
+    const { processDocument } = await import("@/lib/processing/process-document");
+    await processDocument(documentId, buffer, filename);
+  });
 
   return NextResponse.json(
     {
