@@ -14,10 +14,14 @@
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "verify:apis": "node scripts/verify-vercel-apis.mjs"
+    "verify:apis": "node scripts/verify-vercel-apis.mjs",
+    "test:pdf": "node scripts/test-pdf-extract.mjs",
+    "test:e2e": "node scripts/e2e-upload-verify.mjs",
+    "test:e2e:prod": "E2E_BASE_URL=https://pdf-summarizer-read-summ.vercel.app node scripts/e2e-upload-verify.mjs"
   },
   "dependencies": {
     "@libsql/client": "^0.17.3",
+    "@napi-rs/canvas": "^0.1.80",
     "@vercel/blob": "^2.4.0",
     "drizzle-orm": "^0.45.2",
     "framer-motion": "^12.40.0",
@@ -37,6 +41,7 @@
     "drizzle-kit": "^0.31.10",
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
+    "playwright": "^1.52.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

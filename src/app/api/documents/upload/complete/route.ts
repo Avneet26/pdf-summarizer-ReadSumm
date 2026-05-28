@@ -66,7 +66,8 @@ export async function POST(request: Request) {
           .set({ uploadObjectPath: blobUrl })
           .where(eq(documents.id, documentId));
 
-        // Load pdf-parse only when after() runs — keeps this route bundle light on Vercel.
+        // Worker must load before pdf-parse (DOMMatrix polyfill on Vercel).
+        await import("pdf-parse/worker");
         const { runStagedUploadProcessing } =
           await import("@/lib/processing/run-staged-upload");
         await runStagedUploadProcessing(documentId);

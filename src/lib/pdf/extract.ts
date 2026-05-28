@@ -1,5 +1,8 @@
 import "server-only";
 
+// Must load before pdf-parse / pdfjs-dist — polyfills DOMMatrix for Node & Vercel.
+import "pdf-parse/worker";
+
 import { PDFParse } from "pdf-parse";
 import { MIN_TEXT_CHARS_PER_PAGE } from "@/lib/constants";
 

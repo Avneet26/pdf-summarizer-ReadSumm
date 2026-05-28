@@ -4,19 +4,27 @@ import { fileURLToPath } from "node:url";
 
 const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 
+/** Native canvas binaries Vercel needs for pdf-parse / pdfjs-dist on Linux. */
+const canvasNativeTracing = [
+  "./node_modules/@napi-rs/canvas/**/*",
+  "./node_modules/@napi-rs/canvas-linux-x64-gnu/**/*",
+  "./node_modules/@napi-rs/canvas-linux-x64-musl/**/*",
+  "./node_modules/@napi-rs/canvas-linux-arm64-gnu/**/*",
+  "./node_modules/@napi-rs/canvas-linux-arm64-musl/**/*",
+];
+
+const pdfTracing = [
+  "./node_modules/pdf-parse/**/*",
+  "./node_modules/pdfjs-dist/**/*",
+  ...canvasNativeTracing,
+];
+
 const nextConfig: NextConfig = {
   outputFileTracingRoot: projectRoot,
-  // pdf-parse must be bundled — externalized Turbopack aliases break in after() on Vercel.
-  serverExternalPackages: ["@libsql/client"],
+  serverExternalPackages: ["pdf-parse", "pdfjs-dist", "@napi-rs/canvas", "@libsql/client"],
   outputFileTracingIncludes: {
-    "/api/documents/upload/complete": [
-      "./node_modules/pdf-parse/**/*",
-      "./node_modules/pdfjs-dist/**/*",
-    ],
-    "/api/documents/upload/direct": [
-      "./node_modules/pdf-parse/**/*",
-      "./node_modules/pdfjs-dist/**/*",
-    ],
+    "/api/documents/upload/complete": pdfTracing,
+    "/api/documents/upload/direct": pdfTracing,
   },
   turbopack: {
     root: projectRoot,

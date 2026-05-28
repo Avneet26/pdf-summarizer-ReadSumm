@@ -82,6 +82,7 @@ export async function POST(request: Request) {
 
   after(async () => {
     try {
+      await import("pdf-parse/worker");
       const { processDocument } = await import("@/lib/processing/process-document");
       await processDocument(documentId, buffer, filename);
     } catch (error) {

@@ -1,0 +1,9 @@
+{
+  "baseUrl": "http://127.0.0.1:3010",
+  "startedAt": "2026-05-28T21:59:42.376Z",
+  "passed": false,
+  "error": "page.goto: Target page, context or browser has been closed\nCall log:\n  - navigating to \"http://127.0.0.1:3010/\", waiting until \"networkidle\"\n",
+  "document": null,
+  "screenshots": [],
+  "finishedAt": "2026-05-28T21:59:42.964Z"
+}

@@ -7,6 +7,10 @@ export function sanitizeErrorMessage(message: string): string {
     return "Server processing failed. Please try uploading again in a minute.";
   }
 
+  if (trimmed.includes("DOMMatrix is not defined")) {
+    return "PDF processing failed to start on the server. Redeploy the latest build and try again.";
+  }
+
   if (trimmed.length > 500) {
     return `${trimmed.slice(0, 500)}…`;
   }
