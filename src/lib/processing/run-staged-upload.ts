@@ -10,7 +10,7 @@ import { processDocument } from "@/lib/processing/process-document";
 import { bufferHasPdfHeader } from "@/lib/utils/pdf-file";
 
 /**
- * Downloads a staged Blob, validates the PDF, runs the full pipeline, then deletes the blob.
+ * Downloads a staged Blob, validates the PDF, runs the pipeline, then deletes the blob.
  */
 export async function runStagedUploadProcessing(documentId: string): Promise<void> {
   const [doc] = await db
@@ -77,7 +77,8 @@ export async function runStagedUploadProcessing(documentId: string): Promise<voi
   );
 
   await processDocument(documentId, buffer, doc.originalFilename, {
-    onFinished: async () => {
+    // Delete blob right after extract/chunk so large books don't hold storage + memory.
+    onExtracted: async () => {
       await deleteStagedBlob(blobUrl);
       await db
         .update(documents)
