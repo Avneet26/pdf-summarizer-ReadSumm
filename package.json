@@ -7,13 +7,14 @@
   },
   "scripts": {
     "dev": "next dev --webpack",
-    "build": "next build",
-    "vercel-build": "node scripts/vercel-prebuild.mjs && next build",
+    "build": "next build --webpack",
+    "vercel-build": "node scripts/vercel-prebuild.mjs && next build --webpack",
     "start": "next start",
     "lint": "eslint",
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "verify:apis": "node scripts/verify-vercel-apis.mjs"
   },
   "dependencies": {
     "@libsql/client": "^0.17.3",

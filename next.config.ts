@@ -6,7 +6,22 @@ const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 
 const nextConfig: NextConfig = {
   outputFileTracingRoot: projectRoot,
-  serverExternalPackages: ["pdf-parse", "@libsql/client"],
+  // pdf-parse must be bundled — externalized Turbopack aliases break in after() on Vercel.
+  serverExternalPackages: ["@libsql/client"],
+  outputFileTracingIncludes: {
+    "/api/documents/upload/complete": [
+      "./node_modules/pdf-parse/**/*",
+      "./node_modules/pdfjs-dist/**/*",
+    ],
+    "/api/documents/upload/direct": [
+      "./node_modules/pdf-parse/**/*",
+      "./node_modules/pdfjs-dist/**/*",
+    ],
+    "/api/documents/[id]/process": [
+      "./node_modules/pdf-parse/**/*",
+      "./node_modules/pdfjs-dist/**/*",
+    ],
+  },
   turbopack: {
     root: projectRoot,
   },

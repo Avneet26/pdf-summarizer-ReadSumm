@@ -1,16 +1,13 @@
 import { eq } from "drizzle-orm";
 import { after, NextResponse } from "next/server";
 
-import { MAX_UPLOAD_BYTES, formatMaxUploadLimit } from "@/lib/constants";
-import { deleteStagedBlob, downloadStagedBlob } from "@/lib/blob/staged";
 import { isBlobConfigured } from "@/lib/blob/config";
 import { ensureDatabaseForApi } from "@/lib/db/api-prepare";
 import { db } from "@/lib/db";
 import { documents } from "@/lib/db/schema";
-import { bufferHasPdfHeader } from "@/lib/utils/pdf-file";
+import { triggerDocumentProcessing } from "@/lib/server/process-trigger";
 
 export const runtime = "nodejs";
-/** Hobby (non–fluid compute) allows at most 60s; keep within that limit. */
 export const maxDuration = 60;
 
 interface CompleteRequestBody {
@@ -53,7 +50,7 @@ export async function POST(request: Request) {
     }
 
     const [doc] = await db
-      .select()
+      .select({ id: documents.id })
       .from(documents)
       .where(eq(documents.id, documentId))
       .limit(1);
@@ -62,74 +59,27 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unknown document." }, { status: 404 });
     }
 
-    const originalFilename = doc.originalFilename;
-
     after(async () => {
-      let buffer: Buffer;
       try {
-        buffer = await downloadStagedBlob(blobUrl);
+        await db
+          .update(documents)
+          .set({ uploadObjectPath: blobUrl })
+          .where(eq(documents.id, documentId));
+
+        await triggerDocumentProcessing(documentId);
       } catch (error) {
         const message =
-          error instanceof Error ? error.message : "Could not read the uploaded file.";
-        console.error(`[PDF] Download from Blob failed: ${message}`);
+          error instanceof Error ? error.message : "Processing failed to start.";
+        console.error(`[PDF] after() trigger error: ${message}`);
         await db
           .update(documents)
           .set({
             status: "failed",
-            errorMessage: "Could not read the uploaded file. Please try again.",
+            errorMessage: message,
             uploadObjectPath: null,
           })
           .where(eq(documents.id, documentId));
-        return;
       }
-
-      if (buffer.byteLength > MAX_UPLOAD_BYTES) {
-        void deleteStagedBlob(blobUrl);
-        await db
-          .update(documents)
-          .set({
-            uploadObjectPath: null,
-            status: "failed",
-            errorMessage: `File exceeds the ${formatMaxUploadLimit()} upload limit.`,
-          })
-          .where(eq(documents.id, documentId));
-        return;
-      }
-
-      if (!bufferHasPdfHeader(buffer)) {
-        void deleteStagedBlob(blobUrl);
-        await db
-          .update(documents)
-          .set({
-            uploadObjectPath: null,
-            status: "failed",
-            errorMessage: "The uploaded file is not a PDF.",
-          })
-          .where(eq(documents.id, documentId));
-        return;
-      }
-
-      await db
-        .update(documents)
-        .set({ uploadObjectPath: blobUrl })
-        .where(eq(documents.id, documentId));
-
-      console.log(
-        `[PDF] Upload complete: ${documentId} (${(buffer.byteLength / 1024).toFixed(1)} KB)`,
-      );
-
-      const { processDocument } = await import("@/lib/processing/process-document");
-
-      await processDocument(documentId, buffer, originalFilename, {
-        onFinished: async () => {
-          await deleteStagedBlob(blobUrl);
-          await db
-            .update(documents)
-            .set({ uploadObjectPath: null })
-            .where(eq(documents.id, documentId));
-          console.log(`[PDF] Cleaned up staged blob for ${documentId}`);
-        },
-      });
     });
 
     return NextResponse.json(

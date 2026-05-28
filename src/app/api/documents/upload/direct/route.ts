@@ -5,6 +5,7 @@ import { ensureDatabaseForApi } from "@/lib/db/api-prepare";
 import { db } from "@/lib/db";
 import { documents } from "@/lib/db/schema";
 import { nanoid } from "nanoid";
+import { processDocument } from "@/lib/processing/process-document";
 import { accentColorFromTitle } from "@/lib/utils/accent-color";
 import {
   bufferHasPdfHeader,
@@ -79,7 +80,6 @@ export async function POST(request: Request) {
   );
 
   after(async () => {
-    const { processDocument } = await import("@/lib/processing/process-document");
     await processDocument(documentId, buffer, filename);
   });
 
