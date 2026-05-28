@@ -44,22 +44,33 @@ export async function uploadViaBlob(
     throw new Error(prepare.error ?? `Could not prepare upload (${prepareRes.status}).`);
   }
 
-  const blob = await upload(prepare.pathname, uploadFile, {
-    access: "private",
-    handleUploadUrl: "/api/documents/upload/blob",
-    clientPayload: JSON.stringify({ documentId: prepare.documentId }),
-    multipart: uploadFile.size > 4.5 * 1024 * 1024,
-    abortSignal: options.signal,
-    onUploadProgress: options.onProgress
-      ? ({ loaded, total, percentage }) => {
-          options.onProgress?.({
-            loaded,
-            total,
-            ratio: percentage / 100,
-          });
-        }
-      : undefined,
-  });
+  let blob;
+  try {
+    blob = await upload(prepare.pathname, uploadFile, {
+      access: "private",
+      handleUploadUrl: "/api/documents/upload/blob",
+      clientPayload: JSON.stringify({ documentId: prepare.documentId }),
+      multipart: uploadFile.size > 4.5 * 1024 * 1024,
+      abortSignal: options.signal,
+      onUploadProgress: options.onProgress
+        ? ({ loaded, total, percentage }) => {
+            options.onProgress?.({
+              loaded,
+              total,
+              ratio: percentage / 100,
+            });
+          }
+        : undefined,
+    });
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Upload to storage failed.";
+    throw new Error(
+      message.includes("Blob") || message.includes("token")
+        ? message
+        : `Upload to storage failed: ${message}`,
+    );
+  }
 
   const completeRes = await fetch("/api/documents/upload/complete", {
     method: "POST",
