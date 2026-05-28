@@ -16,7 +16,6 @@ import { cards, chunks, documents } from "@/lib/db/schema";
 import { nanoid } from "nanoid";
 import { groupIntoBatches } from "@/lib/utils/concurrency-pool";
 import { ProgressFlusher } from "@/lib/utils/progress-flusher";
-import { isPastDeadline } from "@/lib/processing/processing-config";
 import {
   countProcessedCards,
   finalizeDocumentIfComplete,
@@ -105,14 +104,8 @@ async function processOneBatch(
   }
 }
 
-/**
- * Summarizes as many pending chunks as fit in the time budget.
- * Returns whether all cards are done.
- */
-export async function runSummarizationStep(
-  documentId: string,
-  deadline: number,
-): Promise<{ done: boolean; processedCards: number; totalCards: number }> {
+/** Summarizes all pending chunks for a document in a single run. */
+export async function runSummarization(documentId: string): Promise<void> {
   const [doc] = await db
     .select()
     .from(documents)
@@ -124,12 +117,7 @@ export async function runSummarizationStep(
   }
 
   if (doc.status !== "summarizing") {
-    const processed = await countProcessedCards(documentId);
-    return {
-      done: doc.status === "ready",
-      processedCards: processed,
-      totalCards: doc.totalCards,
-    };
+    return;
   }
 
   const chunkRows = await db
@@ -149,26 +137,21 @@ export async function runSummarizationStep(
   if (pending.length === 0) {
     const processed = await countProcessedCards(documentId);
     await finalizeDocumentIfComplete(documentId, processed, chunkRows.length);
-    return { done: true, processedCards: processed, totalCards: chunkRows.length };
+    return;
   }
 
   const batchSize = getOpenRouterBatchSize();
   const batches = groupIntoBatches(pending, batchSize);
-  const concurrency = Math.min(2, getOpenRouterConcurrency(batches.length));
+  const concurrency = getOpenRouterConcurrency(batches.length);
   const progress = new ProgressFlusher(documentId);
   const title = doc.title;
 
   console.log(
-    `[PDF] Summarizing ${documentId}: ${pending.length} cards left, ${batches.length} batches (budget until ${new Date(deadline).toISOString()})`,
+    `[PDF] Summarizing ${documentId}: ${pending.length} cards in ${batches.length} batches`,
   );
 
   let batchIndex = 0;
   while (batchIndex < batches.length) {
-    if (isPastDeadline(deadline)) {
-      console.log(`[PDF] Time budget reached for ${documentId}, chaining continue…`);
-      break;
-    }
-
     const slice = batches.slice(batchIndex, batchIndex + concurrency);
     await Promise.all(
       slice.map((batch, offset) =>
@@ -179,17 +162,5 @@ export async function runSummarizationStep(
   }
 
   const processed = await progress.finalize();
-  const allDone = processed >= chunkRows.length;
-
-  if (allDone) {
-    await finalizeDocumentIfComplete(documentId, processed, chunkRows.length);
-    return { done: true, processedCards: processed, totalCards: chunkRows.length };
-  }
-
-  await db
-    .update(documents)
-    .set({ processedCards: processed, totalCards: chunkRows.length })
-    .where(eq(documents.id, documentId));
-
-  return { done: false, processedCards: processed, totalCards: chunkRows.length };
+  await finalizeDocumentIfComplete(documentId, processed, chunkRows.length);
 }

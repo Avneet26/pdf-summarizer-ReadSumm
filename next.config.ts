@@ -36,7 +36,6 @@ const nextConfig: NextConfig = {
     "/api/documents/upload/prepare": pdfTracing,
     "/api/documents/upload/complete": pdfTracing,
     "/api/documents/upload/direct": pdfTracing,
-    "/api/documents/[id]/continue": pdfTracing,
   },
   turbopack: {
     root: projectRoot,

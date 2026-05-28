@@ -9,7 +9,7 @@ import { documents } from "@/lib/db/schema";
 import { sanitizeErrorMessage } from "@/lib/utils/sanitize-error-message";
 
 export const runtime = "nodejs";
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 interface CompleteRequestBody {
   documentId?: unknown;

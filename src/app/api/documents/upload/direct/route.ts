@@ -15,8 +15,8 @@ import {
 import { sanitizeErrorMessage } from "@/lib/utils/sanitize-error-message";
 
 export const runtime = "nodejs";
-/** Hobby (non–fluid compute) allows at most 60s; keep within that limit. */
-export const maxDuration = 60;
+/** Pro plan allows up to 300s; processing runs to completion in one invocation. */
+export const maxDuration = 300;
 
 export async function POST(request: Request) {
   const dbError = await ensureDatabaseForApi();

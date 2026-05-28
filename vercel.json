@@ -5,16 +5,13 @@
   "installCommand": "npm install",
   "functions": {
     "app/api/documents/upload/prepare/route.ts": {
-      "maxDuration": 60
+      "maxDuration": 300
     },
     "app/api/documents/upload/complete/route.ts": {
-      "maxDuration": 60
+      "maxDuration": 300
     },
     "app/api/documents/upload/direct/route.ts": {
-      "maxDuration": 60
-    },
-    "app/api/documents/[id]/continue/route.ts": {
-      "maxDuration": 60
+      "maxDuration": 300
     }
   }
 }

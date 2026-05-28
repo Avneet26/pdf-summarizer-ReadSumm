@@ -5,12 +5,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { documents } from "@/lib/db/schema";
 import { extractAndChunkDocument } from "@/lib/processing/extract-and-chunk";
-import {
-  createProcessingDeadline,
-  getProcessingTimeBudgetMs,
-} from "@/lib/processing/processing-config";
-import { runSummarizationStep } from "@/lib/processing/summarize-chunks";
-import { triggerContinueProcessing } from "@/lib/server/continue-trigger";
+import { runSummarization } from "@/lib/processing/summarize-chunks";
 
 interface ProcessOptions {
   onExtracted?: () => Promise<void> | void;
@@ -33,20 +28,10 @@ export async function processDocument(
       await options.onExtracted();
     }
 
-    const deadline = createProcessingDeadline();
-    const result = await runSummarizationStep(documentId, deadline);
-
-    if (!result.done) {
-      console.log(
-        `[PDF] Pausing ${documentId} at ${result.processedCards}/${result.totalCards} cards — scheduling continue`,
-      );
-      await triggerContinueProcessing(documentId);
-    }
+    await runSummarization(documentId);
 
     const elapsed = ((Date.now() - pipelineStart) / 1000).toFixed(1);
-    console.log(
-      `[PDF] Invocation finished in ${elapsed}s (budget ${getProcessingTimeBudgetMs() / 1000}s, done=${result.done})`,
-    );
+    console.log(`[PDF] Processing finished in ${elapsed}s (${documentId})`);
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Unknown processing error.";
@@ -69,19 +54,4 @@ export async function processDocument(
       }
     }
   }
-}
-
-/** Resume summarization for a document already extracted and chunked. */
-export async function continueDocumentProcessing(documentId: string) {
-  const deadline = createProcessingDeadline();
-  const result = await runSummarizationStep(documentId, deadline);
-
-  if (!result.done) {
-    console.log(
-      `[PDF] Continue pause ${documentId} at ${result.processedCards}/${result.totalCards}`,
-    );
-    await triggerContinueProcessing(documentId);
-  }
-
-  return result;
 }
