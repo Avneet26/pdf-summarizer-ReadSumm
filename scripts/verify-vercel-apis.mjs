@@ -47,13 +47,23 @@ await check("POST /api/documents/upload/prepare", async () => {
     }),
   });
   const text = await res.text();
-  if (res.status === 503 && text.includes("BLOB_READ_WRITE_TOKEN")) {
-    console.log("  (skipped: Blob not configured on this host)");
+  if (res.status === 503 && text.includes("R2")) {
+    console.log("  (skipped: R2 not configured on this host)");
     return;
   }
   if (!res.ok) throw new Error(`status ${res.status}: ${text}`);
   const data = JSON.parse(text);
-  if (!data.documentId || !data.pathname) throw new Error("missing prepare fields");
+  if (data.documentId && data.pathname && !data.uploadUrl) {
+    throw new Error(
+      "deployment still uses Vercel Blob — push and deploy the latest R2 code from main",
+    );
+  }
+  if (!data.documentId || !data.pathname || !data.uploadUrl) {
+    throw new Error("missing prepare fields (expected documentId, pathname, uploadUrl)");
+  }
+  if (!String(data.uploadUrl).includes("r2.cloudflarestorage.com")) {
+    throw new Error("prepare uploadUrl is not an R2 presigned URL");
+  }
 });
 
 await check("POST /api/documents/upload/complete (unknown doc → 404 JSON)", async () => {
@@ -62,7 +72,6 @@ await check("POST /api/documents/upload/complete (unknown doc → 404 JSON)", as
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       documentId: "smoke-nonexistent-id",
-      blobUrl: "https://example.com/fake.pdf",
     }),
   });
   const text = await res.text();
@@ -70,7 +79,7 @@ await check("POST /api/documents/upload/complete (unknown doc → 404 JSON)", as
     throw new Error("got HTML error page instead of JSON — route may be misconfigured");
   }
   if (res.status === 503 && text.includes("not configured")) {
-    console.log("  (skipped: Blob not configured on this host)");
+    console.log("  (skipped: R2 not configured on this host)");
     return;
   }
   if (res.status !== 404) throw new Error(`expected 404, got ${res.status}: ${text}`);

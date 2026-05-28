@@ -2,16 +2,17 @@ import "server-only";
 
 import { createHash } from "node:crypto";
 
+import { getR2SecretAccessKey } from "@/lib/storage/config";
 import { getAppRefererUrl } from "@/lib/utils/app-url";
 
 function continueSecret(): string | undefined {
   const explicit = process.env.CONTINUE_PROCESS_SECRET?.trim();
   if (explicit) return explicit;
 
-  const blobToken = process.env.BLOB_READ_WRITE_TOKEN?.trim();
-  if (blobToken && process.env.VERCEL === "1") {
+  const secretAccessKey = getR2SecretAccessKey();
+  if (secretAccessKey && process.env.VERCEL === "1") {
     return createHash("sha256")
-      .update(`pdf-continue:${blobToken}`)
+      .update(`pdf-continue:${secretAccessKey}`)
       .digest("hex")
       .slice(0, 32);
   }
@@ -34,9 +35,24 @@ export function authorizeContinueRequest(request: Request): boolean {
   );
 }
 
+function continueProcessBaseUrl(): string {
+  if (process.env.VERCEL === "1") {
+    // Chain within the same deployment (production or preview).
+    const host = process.env.VERCEL_URL?.trim();
+    if (host) {
+      return `https://${host.replace(/^https?:\/\//, "")}`;
+    }
+    return getAppRefererUrl().replace(/\/$/, "");
+  }
+
+  // Local dev must chain to localhost — NEXT_PUBLIC_APP_URL is often production.
+  const port = process.env.PORT?.trim() || "3000";
+  return `http://127.0.0.1:${port}`;
+}
+
 /** Schedules the next summarization slice in a fresh serverless invocation. */
 export async function triggerContinueProcessing(documentId: string): Promise<void> {
-  const url = `${getAppRefererUrl().replace(/\/$/, "")}/api/documents/${documentId}/continue`;
+  const url = `${continueProcessBaseUrl()}/api/documents/${documentId}/continue`;
   const secret = continueSecret();
 
   const response = await fetch(url, {

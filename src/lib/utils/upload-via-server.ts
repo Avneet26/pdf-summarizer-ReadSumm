@@ -8,8 +8,8 @@ interface DirectUploadResponse {
 }
 
 /**
- * Uploads through the Next.js API (no Blob). Used on localhost when
- * BLOB_READ_WRITE_TOKEN is not set. Vercel body limit ~4.5 MB applies.
+ * Uploads through the Next.js API (no R2). Used on localhost when
+ * R2 credentials are not set. Vercel body limit ~4.5 MB applies.
  */
 export function uploadViaServer(
   file: File,

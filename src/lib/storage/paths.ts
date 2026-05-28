@@ -10,3 +10,7 @@ export function documentIdFromPathname(pathname: string): string | null {
   const match = /^uploads\/([^/]+)\//.exec(pathname);
   return match?.[1] ?? null;
 }
+
+export function isStagedUploadPath(value: string): boolean {
+  return /^uploads\/[^/]+\/.+/.test(value);
+}

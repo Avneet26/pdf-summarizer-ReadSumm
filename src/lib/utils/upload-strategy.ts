@@ -1,24 +1,32 @@
-import { isBlobConfigured } from "@/lib/blob/config";
+import { isStorageConfigured } from "@/lib/storage/config";
 
 function isLocalHostname(hostname: string): boolean {
   return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "[::1]";
 }
 
+function r2UploadsEnabledInBrowser(): boolean {
+  return process.env.NEXT_PUBLIC_R2_UPLOADS_ENABLED === "true";
+}
+
 /**
  * Whether to upload via POST /api/documents/upload/direct (same-origin).
- * - Browser: only on localhost (production must use Vercel Blob client upload).
- * - Server: when Blob token is missing (e.g. local dev without vercel env pull).
+ * - Browser on localhost: direct upload only when R2 is not configured.
+ * - Browser on production: always use R2 presigned URL upload.
+ * - Server: when R2 credentials are missing.
  *
- * BLOB_READ_WRITE_TOKEN is server-only — never use isBlobConfigured() in the
- * browser or production would always pick direct upload and hit Vercel's 4.5MB cap.
+ * R2 credentials are server-only — the browser uses NEXT_PUBLIC_R2_UPLOADS_ENABLED
+ * (set at build/dev startup from server env in next.config.ts).
  */
 export function preferServerUpload(): boolean {
   if (process.env.NEXT_PUBLIC_UPLOAD_VIA_SERVER === "true") return true;
   if (process.env.NEXT_PUBLIC_UPLOAD_VIA_SERVER === "false") return false;
 
   if (typeof window !== "undefined") {
-    return isLocalHostname(window.location.hostname);
+    if (isLocalHostname(window.location.hostname)) {
+      return !r2UploadsEnabledInBrowser();
+    }
+    return false;
   }
 
-  return !isBlobConfigured();
+  return !isStorageConfigured();
 }

@@ -7,9 +7,6 @@
     "app/api/documents/upload/prepare/route.ts": {
       "maxDuration": 60
     },
-    "app/api/documents/upload/blob/route.ts": {
-      "maxDuration": 60
-    },
     "app/api/documents/upload/complete/route.ts": {
       "maxDuration": 60
     },

@@ -19,12 +19,24 @@ const pdfTracing = [
   ...canvasNativeTracing,
 ];
 
+const r2Configured = Boolean(
+  process.env.R2_ACCOUNT_ID?.trim() &&
+    process.env.R2_ACCESS_KEY_ID?.trim() &&
+    process.env.R2_SECRET_ACCESS_KEY?.trim() &&
+    process.env.R2_BUCKET_NAME?.trim(),
+);
+
 const nextConfig: NextConfig = {
+  env: {
+    NEXT_PUBLIC_R2_UPLOADS_ENABLED: r2Configured ? "true" : "false",
+  },
   outputFileTracingRoot: projectRoot,
   serverExternalPackages: ["pdf-parse", "pdfjs-dist", "@napi-rs/canvas", "@libsql/client"],
   outputFileTracingIncludes: {
+    "/api/documents/upload/prepare": pdfTracing,
     "/api/documents/upload/complete": pdfTracing,
     "/api/documents/upload/direct": pdfTracing,
+    "/api/documents/[id]/continue": pdfTracing,
   },
   turbopack: {
     root: projectRoot,

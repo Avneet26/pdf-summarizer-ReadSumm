@@ -1,7 +1,8 @@
 import { eq } from "drizzle-orm";
 import { after, NextResponse } from "next/server";
 
-import { isBlobConfigured } from "@/lib/blob/config";
+import { isStorageConfigured } from "@/lib/storage/config";
+import { stagedFileExists } from "@/lib/storage/staged";
 import { ensureDatabaseForApi } from "@/lib/db/api-prepare";
 import { db } from "@/lib/db";
 import { documents } from "@/lib/db/schema";
@@ -12,7 +13,6 @@ export const maxDuration = 60;
 
 interface CompleteRequestBody {
   documentId?: unknown;
-  blobUrl?: unknown;
 }
 
 export async function POST(request: Request) {
@@ -20,11 +20,11 @@ export async function POST(request: Request) {
     const dbError = await ensureDatabaseForApi();
     if (dbError) return dbError;
 
-    if (!isBlobConfigured()) {
+    if (!isStorageConfigured()) {
       return NextResponse.json(
         {
           error:
-            "Upload storage is not configured. Add a Vercel Blob store to the project.",
+            "Upload storage is not configured. Set Cloudflare R2 credentials in the environment.",
         },
         { status: 503 },
       );
@@ -39,18 +39,16 @@ export async function POST(request: Request) {
 
     const documentId =
       typeof payload.documentId === "string" ? payload.documentId.trim() : "";
-    const blobUrl =
-      typeof payload.blobUrl === "string" ? payload.blobUrl.trim() : "";
 
-    if (!documentId || !blobUrl) {
-      return NextResponse.json(
-        { error: "Missing documentId or blobUrl." },
-        { status: 400 },
-      );
+    if (!documentId) {
+      return NextResponse.json({ error: "Missing documentId." }, { status: 400 });
     }
 
     const [doc] = await db
-      .select({ id: documents.id })
+      .select({
+        id: documents.id,
+        uploadObjectPath: documents.uploadObjectPath,
+      })
       .from(documents)
       .where(eq(documents.id, documentId))
       .limit(1);
@@ -59,13 +57,24 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unknown document." }, { status: 404 });
     }
 
+    const objectPath = doc.uploadObjectPath?.trim();
+    if (!objectPath) {
+      return NextResponse.json(
+        { error: "No staged upload found for this document." },
+        { status: 400 },
+      );
+    }
+
+    const exists = await stagedFileExists(objectPath);
+    if (!exists) {
+      return NextResponse.json(
+        { error: "Uploaded file was not found in storage. Please try again." },
+        { status: 400 },
+      );
+    }
+
     after(async () => {
       try {
-        await db
-          .update(documents)
-          .set({ uploadObjectPath: blobUrl })
-          .where(eq(documents.id, documentId));
-
         // Worker must load before pdf-parse (DOMMatrix polyfill on Vercel).
         await import("pdf-parse/worker");
         const { runStagedUploadProcessing } =

@@ -31,10 +31,23 @@ if (!process.env.TURSO_AUTH_TOKEN?.trim()) {
 console.log("[Vercel build] Applying database schema to Turso…");
 execSync("npx drizzle-kit push --force", { stdio: "inherit" });
 
-if (!process.env.BLOB_READ_WRITE_TOKEN?.trim()) {
-  console.warn(
-    "\n[Vercel build] BLOB_READ_WRITE_TOKEN is not set.\n" +
-      "  Create a Blob store: Vercel project → Storage → Create → Blob.\n" +
-      "  Uploads on the live site will fail until the token is linked to this project.\n",
+const r2Configured =
+  process.env.R2_ACCOUNT_ID?.trim() &&
+  process.env.R2_ACCESS_KEY_ID?.trim() &&
+  process.env.R2_SECRET_ACCESS_KEY?.trim() &&
+  process.env.R2_BUCKET_NAME?.trim();
+
+if (!r2Configured) {
+  console.error(
+    "\n[Vercel build] Cloudflare R2 is not configured.\n" +
+      "  Add these in Vercel → Project → Settings → Environment Variables (Production + Preview):\n" +
+      "    R2_ACCOUNT_ID\n" +
+      "    R2_ACCESS_KEY_ID\n" +
+      "    R2_SECRET_ACCESS_KEY\n" +
+      "    R2_BUCKET_NAME\n" +
+      "  Uploads on the live site will fail until all four are set.\n",
   );
+  process.exit(1);
 }
+
+console.log("[Vercel build] R2 storage credentials detected.");

@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { nanoid } from "nanoid";
 
 import { MAX_UPLOAD_BYTES, formatMaxUploadLimit } from "@/lib/constants";
-import { buildUploadPathname } from "@/lib/blob/paths";
-import { isBlobConfigured } from "@/lib/blob/config";
+import { isStorageConfigured } from "@/lib/storage/config";
+import { buildUploadPathname } from "@/lib/storage/paths";
+import { createSignedUploadUrl } from "@/lib/storage/staged";
 import { ensureDatabaseForApi } from "@/lib/db/api-prepare";
 import { db } from "@/lib/db";
 import { documents } from "@/lib/db/schema";
@@ -22,11 +23,11 @@ export async function POST(request: Request) {
   const dbError = await ensureDatabaseForApi();
   if (dbError) return dbError;
 
-  if (!isBlobConfigured()) {
+  if (!isStorageConfigured()) {
     return NextResponse.json(
       {
         error:
-          "Upload storage is not configured. Add a Vercel Blob store to the project (BLOB_READ_WRITE_TOKEN).",
+          "Upload storage is not configured. Set Cloudflare R2 credentials (R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET_NAME).",
       },
       { status: 503 },
     );
@@ -89,9 +90,11 @@ export async function POST(request: Request) {
     uploadObjectPath: pathname,
   });
 
+  const uploadUrl = await createSignedUploadUrl(pathname, contentType);
+
   console.log(
     `[PDF] Upload prepared: "${filename}" → ${documentId} (${pathname})`,
   );
 
-  return NextResponse.json({ documentId, pathname });
+  return NextResponse.json({ documentId, pathname, uploadUrl });
 }

@@ -1,6 +1,6 @@
 export const SINGLE_USER_ID = "default";
 
-// Uploads go directly from the browser to Firebase Storage via a signed URL,
+// Uploads go directly from the browser to Cloudflare R2 via a presigned URL,
 // so the Vercel ~4.5 MB serverless body limit no longer applies. We still cap
 // the size to keep memory bounded when the server downloads the staged file
 // for processing. Override via NEXT_PUBLIC_MAX_UPLOAD_MB to taste.
