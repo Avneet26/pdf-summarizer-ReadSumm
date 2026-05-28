@@ -38,16 +38,15 @@ const r2Configured =
   process.env.R2_BUCKET_NAME?.trim();
 
 if (!r2Configured) {
-  console.error(
+  console.warn(
     "\n[Vercel build] Cloudflare R2 is not configured.\n" +
       "  Add these in Vercel → Project → Settings → Environment Variables (Production + Preview):\n" +
       "    R2_ACCOUNT_ID\n" +
       "    R2_ACCESS_KEY_ID\n" +
       "    R2_SECRET_ACCESS_KEY\n" +
       "    R2_BUCKET_NAME\n" +
-      "  Uploads on the live site will fail until all four are set.\n",
+      "  Then redeploy. Uploads will return 503 until all four are set.\n",
   );
-  process.exit(1);
+} else {
+  console.log("[Vercel build] R2 storage credentials detected.");
 }
-
-console.log("[Vercel build] R2 storage credentials detected.");

@@ -75,7 +75,7 @@ Open [http://localhost:3000](http://localhost:3000).
      - `R2_SECRET_ACCESS_KEY`
      - `R2_BUCKET_NAME`
    - Set bucket CORS to allow your Vercel domain (see `scripts/r2-storage-cors.json`)
-   - The build fails if any R2 variable is missing on Vercel
+   - The build warns if R2 variables are missing; uploads return 503 until all four are set
 
 4. Optional: `NEXT_PUBLIC_APP_URL=https://pdf-summarizer-read-summ.vercel.app`
 
