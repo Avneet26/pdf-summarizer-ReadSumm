@@ -1,11 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { DocGrid } from "@/components/library/DocGrid";
 import { UploadDropzone } from "@/components/library/UploadDropzone";
 import { parseJsonResponse } from "@/lib/utils/parse-json-response";
-import { uploadViaFirebase } from "@/lib/utils/upload-via-firebase";
+import { uploadPdf } from "@/lib/utils/upload-pdf";
 import type { DocumentSummary } from "@/types";
+
+const PROCESSING_STATUSES = new Set([
+  "queued",
+  "extracting",
+  "chunking",
+  "summarizing",
+]);
 
 interface LibraryPageClientProps {
   initialDocuments: DocumentSummary[];
@@ -16,6 +23,11 @@ export function LibraryPageClient({ initialDocuments }: LibraryPageClientProps) 
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
 
+  const hasProcessing = useMemo(
+    () => documents.some((doc) => PROCESSING_STATUSES.has(doc.status)),
+    [documents],
+  );
+
   const fetchDocuments = useCallback(async () => {
     const response = await fetch("/api/documents");
     if (!response.ok) return;
@@ -24,9 +36,6 @@ export function LibraryPageClient({ initialDocuments }: LibraryPageClientProps) 
   }, []);
 
   useEffect(() => {
-    const hasProcessing = documents.some((doc) =>
-      ["queued", "extracting", "chunking", "summarizing"].includes(doc.status),
-    );
     if (!hasProcessing) return;
 
     const interval = setInterval(() => {
@@ -34,13 +43,13 @@ export function LibraryPageClient({ initialDocuments }: LibraryPageClientProps) 
     }, 3000);
 
     return () => clearInterval(interval);
-  }, [documents, fetchDocuments]);
+  }, [hasProcessing, fetchDocuments]);
 
   async function handleUpload(file: File) {
     setUploading(true);
     setUploadProgress(0);
     try {
-      await uploadViaFirebase(file, {
+      await uploadPdf(file, {
         onProgress: ({ ratio }) => setUploadProgress(ratio),
       });
       await fetchDocuments();

@@ -46,9 +46,33 @@ const STATEMENTS = [
   )`,
 ] as const;
 
-/** Creates tables if missing. Does not read migration files (safe on Vercel serverless). */
+const COLUMN_PATCHES = [
+  { table: "documents", column: "upload_object_path", sql: "text" },
+] as const;
+
+async function tableHasColumn(
+  client: Client,
+  table: string,
+  column: string,
+): Promise<boolean> {
+  const result = await client.execute(`PRAGMA table_info(${table})`);
+  return result.rows.some((row) => row.name === column);
+}
+
+async function ensureColumns(client: Client): Promise<void> {
+  for (const patch of COLUMN_PATCHES) {
+    const exists = await tableHasColumn(client, patch.table, patch.column);
+    if (exists) continue;
+    await client.execute(
+      `ALTER TABLE ${patch.table} ADD COLUMN ${patch.column} ${patch.sql}`,
+    );
+  }
+}
+
+/** Creates tables if missing. Patches older schemas with new columns. */
 export async function bootstrapSchema(client: Client): Promise<void> {
   for (const sql of STATEMENTS) {
     await client.execute(sql);
   }
+  await ensureColumns(client);
 }

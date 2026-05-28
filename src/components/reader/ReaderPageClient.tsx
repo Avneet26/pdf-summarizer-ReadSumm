@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { CardDeck } from "@/components/reader/CardDeck";
 import { Badge } from "@/components/ui/Badge";
 import type { CardItem, DocumentSummary } from "@/types";
@@ -22,6 +22,12 @@ export function ReaderPageClient({
   const [document, setDocument] = useState(initialDocument);
   const [cards, setCards] = useState(initialCards);
 
+  const isProcessing = useMemo(
+    () =>
+      ["queued", "extracting", "chunking", "summarizing"].includes(document.status),
+    [document.status],
+  );
+
   const fetchData = useCallback(async () => {
     const [docRes, cardsRes] = await Promise.all([
       fetch(`/api/documents/${documentId}`),
@@ -38,9 +44,6 @@ export function ReaderPageClient({
   }, [documentId]);
 
   useEffect(() => {
-    const isProcessing = ["queued", "extracting", "chunking", "summarizing"].includes(
-      document.status,
-    );
     if (!isProcessing) return;
 
     const interval = setInterval(() => {
@@ -48,11 +51,7 @@ export function ReaderPageClient({
     }, 3000);
 
     return () => clearInterval(interval);
-  }, [document.status, fetchData]);
-
-  const isProcessing = ["queued", "extracting", "chunking", "summarizing"].includes(
-    document.status,
-  );
+  }, [isProcessing, fetchData]);
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-6 py-10 md:py-14">

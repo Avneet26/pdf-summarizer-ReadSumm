@@ -1,40 +1,40 @@
 import { NextResponse } from "next/server";
+import { nanoid } from "nanoid";
 
 import { MAX_UPLOAD_BYTES, formatMaxUploadLimit } from "@/lib/constants";
+import { buildUploadPathname } from "@/lib/blob/paths";
+import { isBlobConfigured } from "@/lib/blob/config";
 import { ensureDatabaseForApi } from "@/lib/db/api-prepare";
 import { db } from "@/lib/db";
 import { documents } from "@/lib/db/schema";
-import { isFirebaseConfigured } from "@/lib/firebase/admin";
-import {
-  buildObjectPath,
-  createSignedUploadUrl,
-  newDocumentId,
-} from "@/lib/firebase/uploads";
 import { accentColorFromTitle } from "@/lib/utils/accent-color";
 import { hasPdfExtension, hasPdfMimeType } from "@/lib/utils/pdf-file";
 
 export const runtime = "nodejs";
 
-interface SignRequestBody {
+interface PrepareRequestBody {
   filename?: unknown;
   contentType?: unknown;
   size?: unknown;
 }
 
 export async function POST(request: Request) {
-  if (!isFirebaseConfigured()) {
+  const dbError = await ensureDatabaseForApi();
+  if (dbError) return dbError;
+
+  if (!isBlobConfigured()) {
     return NextResponse.json(
       {
         error:
-          "File storage is not configured on the server. Set the FIREBASE_* environment variables.",
+          "Upload storage is not configured. Add a Vercel Blob store to the project (BLOB_READ_WRITE_TOKEN).",
       },
       { status: 503 },
     );
   }
 
-  let payload: SignRequestBody;
+  let payload: PrepareRequestBody;
   try {
-    payload = (await request.json()) as SignRequestBody;
+    payload = (await request.json()) as PrepareRequestBody;
   } catch {
     return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
   }
@@ -64,29 +64,20 @@ export async function POST(request: Request) {
     );
   }
 
-  if (!hasPdfExtension(filename) && !hasPdfMimeType(contentType)) {
+  const looksLikePdf =
+    hasPdfExtension(filename) ||
+    hasPdfMimeType(contentType) ||
+    contentType === "application/octet-stream";
+  if (!looksLikePdf) {
     return NextResponse.json(
       { error: "Only PDF files are supported." },
       { status: 400 },
     );
   }
 
-  const documentId = newDocumentId();
-  const objectPath = buildObjectPath(documentId, filename);
+  const documentId = nanoid();
+  const pathname = buildUploadPathname(documentId, filename);
   const titleGuess = filename.replace(/\.pdf$/i, "").replace(/[_-]/g, " ").trim();
-
-  let signed;
-  try {
-    signed = await createSignedUploadUrl(objectPath, contentType);
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Could not create upload URL.";
-    console.error(`[PDF] Sign upload failed: ${message}`);
-    return NextResponse.json(
-      { error: "Could not prepare the upload. Please try again." },
-      { status: 500 },
-    );
-  }
 
   await db.insert(documents).values({
     id: documentId,
@@ -95,18 +86,12 @@ export async function POST(request: Request) {
     status: "queued",
     accentColor: accentColorFromTitle(titleGuess || filename),
     createdAt: new Date().toISOString(),
-    uploadObjectPath: objectPath,
+    uploadObjectPath: pathname,
   });
 
   console.log(
-    `[PDF] Signed upload URL issued for "${filename}" → ${documentId} (${objectPath})`,
+    `[PDF] Upload prepared: "${filename}" → ${documentId} (${pathname})`,
   );
 
-  return NextResponse.json({
-    documentId,
-    objectPath,
-    uploadUrl: signed.uploadUrl,
-    contentType,
-    expiresAt: signed.expiresAt,
-  });
+  return NextResponse.json({ documentId, pathname });
 }

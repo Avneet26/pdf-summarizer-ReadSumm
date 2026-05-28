@@ -30,7 +30,12 @@ export function CardDeck({
   useEffect(() => {
     setIndex(initialIndex);
     setShowContinueHint(initialIndex > 0);
-  }, [initialIndex, cards.length]);
+  }, [documentId, initialIndex]);
+
+  useEffect(() => {
+    if (cards.length === 0) return;
+    setIndex((current) => Math.min(current, cards.length - 1));
+  }, [cards.length]);
 
   const saveProgress = useCallback(
     (cardIndex: number) => {

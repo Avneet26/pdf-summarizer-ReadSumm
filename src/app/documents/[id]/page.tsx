@@ -2,7 +2,8 @@ import { asc, eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { ReaderPageClient } from "@/components/reader/ReaderPageClient";
 import { SetupRequired } from "@/components/setup/SetupRequired";
-import { db, prepareDatabase } from "@/lib/db/prepare";
+import { db } from "@/lib/db";
+import { prepareDatabase } from "@/lib/db/prepare";
 import {
   getReadingProgress,
   resolveCardIndex,

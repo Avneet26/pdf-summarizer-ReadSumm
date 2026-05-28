@@ -30,3 +30,11 @@ if (!process.env.TURSO_AUTH_TOKEN?.trim()) {
 
 console.log("[Vercel build] Applying database schema to Turso…");
 execSync("npx drizzle-kit push --force", { stdio: "inherit" });
+
+if (!process.env.BLOB_READ_WRITE_TOKEN?.trim()) {
+  console.warn(
+    "\n[Vercel build] BLOB_READ_WRITE_TOKEN is not set.\n" +
+      "  Create a Blob store: Vercel project → Storage → Create → Blob.\n" +
+      "  Uploads on the live site will fail until the token is linked to this project.\n",
+  );
+}

@@ -1,5 +1,5 @@
 import { assertDatabaseConfigured } from "./env";
-import { client, db } from "./index";
+import { client } from "./index";
 import { bootstrapSchema } from "./bootstrap-schema";
 
 let ready: Promise<void> | null = null;
@@ -17,5 +17,3 @@ export function prepareDatabase(): Promise<void> {
   }
   return ready;
 }
-
-export { db };

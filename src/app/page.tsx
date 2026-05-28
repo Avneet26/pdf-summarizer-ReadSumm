@@ -1,7 +1,8 @@
 import { desc } from "drizzle-orm";
 import { LibraryPageClient } from "@/components/library/LibraryPageClient";
 import { SetupRequired } from "@/components/setup/SetupRequired";
-import { db, prepareDatabase } from "@/lib/db/prepare";
+import { db } from "@/lib/db";
+import { prepareDatabase } from "@/lib/db/prepare";
 import { documents } from "@/lib/db/schema";
 import type { DocumentSummary } from "@/types";
 

@@ -6,6 +6,9 @@ export const SINGLE_USER_ID = "default";
 // for processing. Override via NEXT_PUBLIC_MAX_UPLOAD_MB to taste.
 const DEFAULT_MAX_UPLOAD_MB = 50;
 
+/** Vercel serverless request body limit — server fallback only works below this. */
+export const VERCEL_UPLOAD_BODY_BYTES = 4 * 1024 * 1024;
+
 function parseMaxUploadMb(): number {
   const raw = process.env.NEXT_PUBLIC_MAX_UPLOAD_MB;
   if (!raw) return DEFAULT_MAX_UPLOAD_MB;
