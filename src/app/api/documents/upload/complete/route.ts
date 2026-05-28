@@ -5,7 +5,7 @@ import { isBlobConfigured } from "@/lib/blob/config";
 import { ensureDatabaseForApi } from "@/lib/db/api-prepare";
 import { db } from "@/lib/db";
 import { documents } from "@/lib/db/schema";
-import { triggerDocumentProcessing } from "@/lib/server/process-trigger";
+import { sanitizeErrorMessage } from "@/lib/utils/sanitize-error-message";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -66,16 +66,19 @@ export async function POST(request: Request) {
           .set({ uploadObjectPath: blobUrl })
           .where(eq(documents.id, documentId));
 
-        await triggerDocumentProcessing(documentId);
+        // Load pdf-parse only when after() runs — keeps this route bundle light on Vercel.
+        const { runStagedUploadProcessing } =
+          await import("@/lib/processing/run-staged-upload");
+        await runStagedUploadProcessing(documentId);
       } catch (error) {
-        const message =
+        const raw =
           error instanceof Error ? error.message : "Processing failed to start.";
-        console.error(`[PDF] after() trigger error: ${message}`);
+        console.error(`[PDF] after() processing error: ${raw}`);
         await db
           .update(documents)
           .set({
             status: "failed",
-            errorMessage: message,
+            errorMessage: sanitizeErrorMessage(raw),
             uploadObjectPath: null,
           })
           .where(eq(documents.id, documentId));

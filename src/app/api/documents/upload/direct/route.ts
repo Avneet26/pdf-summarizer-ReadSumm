@@ -1,3 +1,4 @@
+import { eq } from "drizzle-orm";
 import { after, NextResponse } from "next/server";
 
 import { MAX_UPLOAD_BYTES, formatMaxUploadLimit } from "@/lib/constants";
@@ -5,13 +6,13 @@ import { ensureDatabaseForApi } from "@/lib/db/api-prepare";
 import { db } from "@/lib/db";
 import { documents } from "@/lib/db/schema";
 import { nanoid } from "nanoid";
-import { processDocument } from "@/lib/processing/process-document";
 import { accentColorFromTitle } from "@/lib/utils/accent-color";
 import {
   bufferHasPdfHeader,
   hasPdfExtension,
   hasPdfMimeType,
 } from "@/lib/utils/pdf-file";
+import { sanitizeErrorMessage } from "@/lib/utils/sanitize-error-message";
 
 export const runtime = "nodejs";
 /** Hobby (non–fluid compute) allows at most 60s; keep within that limit. */
@@ -80,7 +81,17 @@ export async function POST(request: Request) {
   );
 
   after(async () => {
-    await processDocument(documentId, buffer, filename);
+    try {
+      const { processDocument } = await import("@/lib/processing/process-document");
+      await processDocument(documentId, buffer, filename);
+    } catch (error) {
+      const raw = error instanceof Error ? error.message : "Processing failed.";
+      console.error(`[PDF] Direct upload processing error: ${raw}`);
+      await db
+        .update(documents)
+        .set({ status: "failed", errorMessage: sanitizeErrorMessage(raw) })
+        .where(eq(documents.id, documentId));
+    }
   });
 
   return NextResponse.json(

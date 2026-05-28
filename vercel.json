@@ -15,9 +15,6 @@
     },
     "app/api/documents/upload/direct/route.ts": {
       "maxDuration": 60
-    },
-    "app/api/documents/[id]/process/route.ts": {
-      "maxDuration": 60
     }
   }
 }

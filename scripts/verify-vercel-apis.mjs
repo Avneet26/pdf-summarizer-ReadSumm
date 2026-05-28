@@ -76,23 +76,6 @@ await check("POST /api/documents/upload/complete (unknown doc → 404 JSON)", as
   if (res.status !== 404) throw new Error(`expected 404, got ${res.status}: ${text}`);
 });
 
-await check("POST /api/documents/:id/process route exists", async () => {
-  const res = await fetch(`${base}/api/documents/smoke-nonexistent-id/process`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: "{}",
-  });
-  const text = await res.text();
-  if (text.startsWith("<!DOCTYPE")) {
-    throw new Error(
-      "process route returned HTML — deploy latest code (includes /api/documents/[id]/process)",
-    );
-  }
-  if (res.status !== 403 && res.status !== 404) {
-    throw new Error(`expected 403 or 404 JSON, got ${res.status}: ${text}`);
-  }
-});
-
 const failed = checks.filter((c) => !c.ok);
 console.log(`\n${checks.length - failed.length}/${checks.length} passed`);
 process.exit(failed.length > 0 ? 1 : 0);

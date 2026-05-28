@@ -17,10 +17,6 @@ const nextConfig: NextConfig = {
       "./node_modules/pdf-parse/**/*",
       "./node_modules/pdfjs-dist/**/*",
     ],
-    "/api/documents/[id]/process": [
-      "./node_modules/pdf-parse/**/*",
-      "./node_modules/pdfjs-dist/**/*",
-    ],
   },
   turbopack: {
     root: projectRoot,
